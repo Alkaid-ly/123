@@ -208,6 +208,7 @@ class TrafficAnalysisService:
         return points if len(points) >= 2 else None
 
     def _normalize_lng_lat(self, first: float, second: float) -> tuple[float, float]:
+        """根据中国范围与经纬度取值范围，判断坐标顺序并规范为 (lng, lat)。"""
         if _out_of_china(first, second) and not _out_of_china(second, first):
             return second, first
         if not _out_of_china(first, second) and _out_of_china(second, first):
@@ -917,7 +918,9 @@ class TrafficAnalysisService:
             to_point = [to_coord["lng"], to_coord["lat"]]
             start = path[0]
             end = path[-1]
-            if self._squared_distance(end, from_point) < self._squared_distance(start, from_point):
+            forward_score = self._squared_distance(start, from_point) + self._squared_distance(end, to_point)
+            reverse_score = self._squared_distance(end, from_point) + self._squared_distance(start, to_point)
+            if reverse_score < forward_score:
                 path = list(reversed(path))
             path[0] = from_point
             path[-1] = to_point
