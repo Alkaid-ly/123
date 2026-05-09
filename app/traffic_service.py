@@ -177,23 +177,45 @@ class TrafficAnalysisService:
             self.intersections.at[idx, "lat"] = round(float(self.intersections.at[idx, "lat"]), 6)
 
         if "geometry" in self.road_segments.columns:
-            new_geometries = []
-            for _, row in self.road_segments.iterrows():
-                try:
-                    if isinstance(row["geometry"], str):
-                        path = json.loads(row["geometry"])
-                        if isinstance(path, list):
-                            converted_path = []
-                            for p in path:
-                                converted_path.append([round(float(p[0]), 6), round(float(p[1]), 6)])
-                            new_geometries.append(json.dumps(converted_path))
-                        else:
-                            new_geometries.append(None)
-                    else:
-                        new_geometries.append(None)
-                except:
-                    new_geometries.append(None)
-            self.road_segments["geometry_gcj"] = new_geometries
+            self.road_segments["geometry_gcj"] = self.road_segments["geometry"].apply(self._normalize_geometry)
+
+    def _normalize_geometry(self, geometry: Any) -> list[list[float]] | None:
+        if geometry is None:
+            return None
+        if not isinstance(geometry, (list, tuple, str)) and pd.isna(geometry):
+            return None
+        if isinstance(geometry, str):
+            geometry = geometry.strip()
+            if not geometry:
+                return None
+            try:
+                geometry = json.loads(geometry)
+            except json.JSONDecodeError:
+                return None
+        if not isinstance(geometry, list):
+            return None
+        points: list[list[float]] = []
+        for point in geometry:
+            if not isinstance(point, (list, tuple)) or len(point) < 2:
+                continue
+            try:
+                first = float(point[0])
+                second = float(point[1])
+            except (TypeError, ValueError):
+                continue
+            lng, lat = self._normalize_lng_lat(first, second)
+            points.append([round(lng, 6), round(lat, 6)])
+        return points if len(points) >= 2 else None
+
+    def _normalize_lng_lat(self, first: float, second: float) -> tuple[float, float]:
+        """根据中国范围与经纬度取值范围，判断坐标顺序并规范为 (lng, lat)。"""
+        if _out_of_china(first, second) and not _out_of_china(second, first):
+            return second, first
+        if not _out_of_china(first, second) and _out_of_china(second, first):
+            return first, second
+        if abs(first) <= 90 < abs(second):
+            return second, first
+        return first, second
 
     def meta(self) -> dict[str, Any]:
         overview = self.dashboard(self.default_date, self.default_hour)
@@ -876,7 +898,7 @@ class TrafficAnalysisService:
     def _edge_path(self, row: pd.Series, coords_lookup: dict[str, Any]) -> list[list[float]]:
         """
         确定路段轨迹。
-        使用 Intersections.csv 中的真实经纬度坐标生成路径。
+        优先使用 Road_Segments.csv 中的 geometry 轨迹，否则回退为路口直线连接。
         """
         from_node = row["from_intersection"]
         to_node = row["to_intersection"]
@@ -884,8 +906,32 @@ class TrafficAnalysisService:
         if from_node not in coords_lookup or to_node not in coords_lookup:
             return []
 
+        geometry_path = row.get("geometry_gcj")
+        if geometry_path is None:
+            geometry_path = row.get("geometry")
+        geometry_path = self._normalize_geometry(geometry_path)
+        if geometry_path:
+            path = [list(point) for point in geometry_path]
+            from_coord = coords_lookup[from_node]
+            to_coord = coords_lookup[to_node]
+            from_point = [from_coord["lng"], from_coord["lat"]]
+            to_point = [to_coord["lng"], to_coord["lat"]]
+            start = path[0]
+            end = path[-1]
+            forward_score = self._squared_distance(start, from_point) + self._squared_distance(end, to_point)
+            reverse_score = self._squared_distance(end, from_point) + self._squared_distance(start, to_point)
+            if reverse_score < forward_score:
+                path = list(reversed(path))
+            path[0] = from_point
+            path[-1] = to_point
+            return path
+
         # 直接使用路口的真实坐标连接
         return [
             [coords_lookup[from_node]["lng"], coords_lookup[from_node]["lat"]],
             [coords_lookup[to_node]["lng"], coords_lookup[to_node]["lat"]],
         ]
+
+    @staticmethod
+    def _squared_distance(point: list[float], target: list[float]) -> float:
+        return (point[0] - target[0]) ** 2 + (point[1] - target[1]) ** 2
