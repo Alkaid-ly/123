@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>城市交通网络社区检测及关键路口分析系统</title>
+    <!-- 移除可能在特定环境下无法访问的 Google Fonts 以提高加载速度 -->
+    <style>
+      body {
+        font-family: "Lexend", "Noto Sans SC", sans-serif;
+      }
+    </style>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚦</text></svg>" />
+    <link rel="stylesheet" href="https://cdn.staticfile.org/element-plus/2.6.1/index.css" crossorigin="anonymous" />
+    <script src="https://cdn.staticfile.org/vue/3.4.21/vue.global.prod.js"></script>
+    <script src="https://cdn.staticfile.org/element-plus/2.6.1/index.full.min.js"></script>
+    <script src="https://cdn.staticfile.org/element-plus-icons-vue/2.3.1/index.iife.min.js"></script>
+    <script src="https://cdn.staticfile.org/element-plus/2.6.1/locale/zh-cn.min.js"></script>
+    <script src="https://cdn.staticfile.org/echarts/5.5.0/echarts.min.js"></script>
+    <script src="https://cdn.staticfile.org/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/leaflet/1.9.4/leaflet.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <!-- 极简加载状态 -->
+    <div id="app-loading" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#f4efe5;z-index:9999;font-family:sans-serif;flex-direction:column;">
+      <div style="width:40px;height:40px;border:4px solid #0f766e;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>
+      <p style="margin-top:16px;font-weight:bold;">系统正在启动</p>
+      <div id="debug-info" style="font-size:11px;color:#d32f2f;margin-top:10px;max-width:80%;text-align:left;background:rgba(211,47,47,0.05);padding:10px;border-radius:4px;display:none;border:1px solid #ffcdd2;"></div>
+      <div style="margin-top:20px;display:flex;gap:10px;">
+        <button id="retry-btn" onclick="location.reload()" style="display:none;padding:8px 16px;border-radius:4px;border:1px solid #0f766e;background:white;color:#0f766e;cursor:pointer;">刷新重试</button>
+        <button id="lite-btn" onclick="window.loadLiteMode()" style="display:none;padding:8px 16px;border-radius:4px;border:none;background:#666;color:white;cursor:pointer;">离线基础版</button>
+      </div>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg);}}</style>
+
+    <div id="app">
+      <div class="ambient ambient-a"></div>
+      <div class="ambient ambient-b"></div>
+      <div class="shell">
+        <header class="hero panel">
+          <div>
+            <p class="eyebrow">Graduation Project Demo</p>
+            <h1>城市交通网络社区检测及关键路口分析系统</h1>
+            <p class="hero-copy">
+              基于秦安县核心城区模拟交通数据，完成交通网络建模、标签传播社区检测、关键路口识别与地图可视化联动。
+            </p>
+          </div>
+          <div class="hero-meta">
+            <div class="meta-chip">
+              <span>分析日期</span>
+              <strong>{{ filters.date || '-' }}</strong>
+            </div>
+            <div class="meta-chip">
+              <span>分析时段</span>
+              <strong>{{ filters.hour }}:00</strong>
+            </div>
+            <div class="meta-chip accent">
+              <span>天气 / 日类型</span>
+              <strong>{{ dashboard.overview.weather || '-' }} / {{ dashboard.overview.dayType || '-' }}</strong>
+            </div>
+          </div>
+        </header>
+
+        <section class="stats-grid" v-if="isAnalyzed">
+          <article class="stat-card panel">
+            <span>路口数量</span>
+            <strong>{{ dashboard.overview.totalIntersections || 0 }}</strong>
+            <small>城市交通复杂网络节点</small>
+          </article>
+          <article class="stat-card panel">
+            <span>路段数量</span>
+            <strong>{{ dashboard.overview.totalSegments || 0 }}</strong>
+            <small>道路边及连通关系</small>
+          </article>
+          <article class="stat-card panel">
+            <span>社区数量</span>
+            <strong>{{ dashboard.overview.communityCount || 0 }}</strong>
+            <small>标签传播算法输出</small>
+          </article>
+          <article class="stat-card panel">
+            <span>平均速度</span>
+            <strong>{{ dashboard.overview.avgSpeedKmh || 0 }} km/h</strong>
+            <small>当前时段路网运行速度</small>
+          </article>
+          <article class="stat-card panel">
+            <span>平均饱和度</span>
+            <strong>{{ dashboard.overview.avgSaturation || 0 }}</strong>
+            <small>当前时段压力水平</small>
+          </article>
+          <article class="stat-card panel warning">
+            <span>高压路口</span>
+            <strong>{{ dashboard.overview.highPressureCount || 0 }}</strong>
+            <small>饱和度 ≥ 0.75</small>
+          </article>
+        </section>
+
+        <section class="controls panel">
+          <div class="control-group">
+            <label>日期</label>
+            <el-select v-model="filters.date" size="large" placeholder="选择日期">
+              <el-option
+                v-for="item in meta.availableDates"
+                :key="item"
+                :label="item"
+                :value="item"
+              />
+            </el-select>
+          </div>
+          <div class="control-group">
+            <label>小时</label>
+            <el-slider
+              v-model="filters.hour"
+              :min="0"
+              :max="23"
+              :step="1"
+              show-input
+              input-size="large"
+            />
+          </div>
+          <div class="control-group">
+            <label>地图视图</label>
+            <el-radio-group v-model="viewMode" size="large">
+              <el-radio-button label="community">社区视图</el-radio-button>
+              <el-radio-button label="critical">关键路口</el-radio-button>
+              <el-radio-button label="saturation">拥堵压力</el-radio-button>
+            </el-radio-group>
+          </div>
+          <div class="control-actions">
+            <el-button type="warning" icon="Upload" @click="showImportDialog = true">
+              导入数据
+            </el-button>
+            <el-button type="danger" icon="VideoPlay" :loading="analyzing" @click="startAnalysis">
+              开始检测分析
+            </el-button>
+            <el-button type="primary" :loading="loading" :disabled="!isAnalyzed" @click="loadDashboard">
+              更新分析
+            </el-button>
+            <el-button plain :disabled="!isAnalyzed" @click="focusTopCritical">聚焦最关键路口</el-button>
+          </div>
+        </section>
+
+        <!-- 数据导入对话框 -->
+        <el-dialog v-model="showImportDialog" title="导入交通数据集 (CSV)" width="500px">
+          <div class="import-form">
+            <div class="import-item">
+              <label>路口数据 (Intersections.csv)</label>
+              <input type="file" @change="e => handleFileChange(e, 'intersections')" accept=".csv" />
+            </div>
+            <div class="import-item">
+              <label>路段数据 (Road_Segments.csv)</label>
+              <input type="file" @change="e => handleFileChange(e, 'road_segments')" accept=".csv" />
+            </div>
+            <div class="import-item">
+              <label>小时流量 (Hourly_Traffic.csv)</label>
+              <input type="file" @change="e => handleFileChange(e, 'hourly_traffic')" accept=".csv" />
+            </div>
+            <div class="import-item">
+              <label>路段日计 (Segment_Daily.csv)</label>
+              <input type="file" @change="e => handleFileChange(e, 'segment_daily')" accept=".csv" />
+            </div>
+          </div>
+          <template #footer>
+            <el-button @click="showImportDialog = false">取消</el-button>
+            <el-button type="primary" :loading="importing" @click="submitImport">上传并应用</el-button>
+          </template>
+        </el-dialog>
+
+        <section class="panel page-tabs" v-if="isAnalyzed">
+          <el-tabs v-model="activePage" stretch>
+            <el-tab-pane label="总览" name="overview"></el-tab-pane>
+            <el-tab-pane label="路网地图" name="map"></el-tab-pane>
+            <el-tab-pane label="社区检测" name="community"></el-tab-pane>
+            <el-tab-pane label="关键路口" name="key"></el-tab-pane>
+            <el-tab-pane label="路口详情" name="detail"></el-tab-pane>
+          </el-tabs>
+        </section>
+
+        <!-- 未分析状态展示 -->
+        <div v-if="!isAnalyzed" class="initial-placeholder panel">
+          <div class="placeholder-content">
+            <el-icon :size="80" color="var(--primary)"><DataAnalysis /></el-icon>
+            <h2>等待运行交通检测分析</h2>
+            <p>系统已准备就绪，您可以点击上方“开始检测分析”按钮，或者导入新的交通数据集进行处理。</p>
+            <div class="steps">
+              <div class="step"><span class="num">1</span> 导入数据 (可选)</div>
+              <div class="step"><span class="num">2</span> 运行检测算法</div>
+              <div class="step"><span class="num">3</span> 查看可视化结果</div>
+            </div>
+          </div>
+        </div>
+
+        <main class="content-grid" v-if="isAnalyzed">
+          <section class="map-panel panel" v-show="activePage !== 'overview'">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Spatial View</p>
+                <h2 v-show="activePage === 'community'">社区检测与分区展示</h2>
+                <h2 v-show="activePage === 'key'">关键路口与瓶颈识别</h2>
+                <h2 v-show="activePage === 'detail'">路口详情与时序分析</h2>
+                <h2 v-show="activePage === 'map'">交通网络地图</h2>
+                <h2 v-show="activePage !== 'community' && activePage !== 'key' && activePage !== 'detail' && activePage !== 'map'">
+                  分析系统总览
+                </h2>
+              </div>
+              <div class="legend">
+                <template v-if="viewMode === 'community'">
+                  <div class="legend-item" v-for="item in dashboard.communities" :key="item.communityId">
+                    <span
+                      class="legend-swatch"
+                      :style="{ backgroundColor: communityColor(item.communityId) }"
+                    ></span>
+                    社区 {{ item.communityId + 1 }}
+                  </div>
+                </template>
+                <template v-if="viewMode === 'critical'">
+                  <div class="legend-item"><span class="legend-swatch critical-low"></span>普通（评分&lt;60）</div>
+                  <div class="legend-item"><span class="legend-swatch critical-mid"></span>关注（60-79）</div>
+                  <div class="legend-item"><span class="legend-swatch critical-high"></span>关键（≥80）</div>
+                </template>
+                <template v-if="viewMode !== 'community' && viewMode !== 'critical'">
+                  <div class="legend-item"><span class="legend-swatch" style="background:#b91c1c"></span>严重（≥0.75）</div>
+                  <div class="legend-item"><span class="legend-swatch" style="background:#f59e0b"></span>中度（0.55-0.74）</div>
+                  <div class="legend-item"><span class="legend-swatch" style="background:#10b981"></span>轻度（0.35-0.54）</div>
+                  <div class="legend-item"><span class="legend-swatch" style="background:#94a3b8"></span>畅通（&lt;0.35）</div>
+                </template>
+              </div>
+            </div>
+            <div class="map-toolbar">
+              <span>路口 {{ dashboard.nodes.length }}</span>
+              <span>路段 {{ dashboard.edges.length }}</span>
+              <span v-show="activePage === 'community'">跨社区连接 {{ crossEdgeCount() }}</span>
+              <span v-show="activePage !== 'community'">功能区一致度 {{ dashboard.overview.zoneAlignment || 0 }}%</span>
+              <el-switch v-model="showFlowAnimation" active-text="交通流向动画" @change="renderMap" style="margin-left: 10px;" />
+              <el-switch v-model="showNodeAnnotations" active-text="路口标注" @change="renderMap" style="margin-left: 10px;" />
+              <el-select
+                v-model="detailIntersectionId"
+                filterable
+                clearable
+                placeholder="搜索路口并定位"
+                style="width: 220px; margin-left: 10px;"
+                @change="onDetailIntersectionChange"
+              >
+                <el-option v-for="opt in detailNodeOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+              </el-select>
+              <el-button v-if="outlierCount > 0" size="small" plain @click="fitAllNodes">
+                包含离群点（{{ outlierCount }}）
+              </el-button>
+            </div>
+            <div v-show="activePage === 'community'" class="community-toolbar">
+              <el-select v-model="selectedCommunityId" size="large" clearable placeholder="聚焦某个社区">
+                <el-option
+                  v-for="item in dashboard.communities"
+                  :key="item.communityId"
+                  :label="'社区 ' + (item.communityId + 1) + '（' + item.size + '路口）'"
+                  :value="item.communityId"
+                />
+              </el-select>
+              <el-switch v-model="showCrossEdges" active-text="显示跨社区连接" />
+            </div>
+            <div id="map"></div>
+          </section>
+
+          <aside class="side-stack" v-show="activePage !== 'overview'">
+            <section class="panel" v-show="activePage === 'key'">
+              <div class="panel-head compact">
+                <div>
+                  <p class="panel-kicker">Ranking</p>
+                  <h2>关键路口排行榜</h2>
+                </div>
+                <div style="font-size: 12px; color: var(--muted); display: flex; gap: 12px; align-items: center;">
+                  <span><el-tag type="danger" size="small" style="margin-right:4px;">No. 1-3</el-tag> 核心关键瓶颈</span>
+                  <span><el-tag type="info" size="small" style="margin-right:4px;">数字</el-tag> 一般排名节点</span>
+                </div>
+              </div>
+              <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
+                <el-input v-model="rankFilter" placeholder="搜索路口ID/名称" clearable style="max-width:220px;" @input="onRankControlChange" />
+                <el-select v-model="rankLimit" placeholder="TopN" style="width: 120px" @change="onRankControlChange">
+                  <el-option :value="5" label="Top 5" />
+                  <el-option :value="10" label="Top 10" />
+                  <el-option :value="20" label="Top 20" />
+                  <el-option :value="40" label="Top 40（全部）" />
+                </el-select>
+                <el-select
+                  v-model="rankCommunity"
+                  clearable
+                  filterable
+                  placeholder="筛选社区"
+                  style="width: 140px"
+                  @change="onRankControlChange"
+                >
+                  <el-option
+                    v-for="c in dashboard.communities"
+                    :key="c.communityId"
+                    :label="'社区 ' + (c.communityId + 1)"
+                    :value="c.communityId"
+                  />
+                </el-select>
+                <el-select
+                  v-model="rankZone"
+                  clearable
+                  filterable
+                  placeholder="筛选功能区"
+                  style="width: 160px"
+                  @change="onRankControlChange"
+                >
+                  <el-option
+                    v-for="zone in Array.from(new Set(dashboard.nodes.map(n => n.functional_zone))).sort()"
+                    :key="zone"
+                    :label="zone"
+                    :value="zone"
+                  />
+                </el-select>
+                <el-button type="success" @click="exportRankingCSV">导出 CSV</el-button>
+                <el-button type="primary" @click="exportRankingXLSX">导出 Excel</el-button>
+                <el-select v-model="groupCommunitySortMetric" style="width: 160px" @change="onRankControlChange">
+                  <el-option value="avgCriticalScore" label="社区按评分" />
+                  <el-option value="avgSaturation" label="社区按饱和度" />
+                  <el-option value="size" label="社区按规模" />
+                </el-select>
+                <el-select v-model="groupZoneSortMetric" style="width: 170px" @change="onRankControlChange">
+                  <el-option value="totalVeh" label="功能区按总车流" />
+                  <el-option value="avgSaturation" label="功能区按饱和度" />
+                  <el-option value="keyNodeCount" label="功能区按关键数" />
+                </el-select>
+                <el-select v-model="groupSortOrder" style="width: 120px" @change="onRankControlChange">
+                  <el-option value="desc" label="降序" />
+                  <el-option value="asc" label="升序" />
+                </el-select>
+                <el-dropdown @command="exportChartCommand">
+                  <el-button type="warning">导出图表PNG</el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="keyMetric">TopN指标图</el-dropdown-item>
+                      <el-dropdown-item command="keyRadar">TopN构成雷达</el-dropdown-item>
+                      <el-dropdown-item command="keyNodeRadar">单点构成雷达</el-dropdown-item>
+                      <el-dropdown-item command="keyGroup">分组统计图</el-dropdown-item>
+                      <el-dropdown-item divided command="all">全部图表</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </div>
+              <el-table
+                :data="topNodesDisplayed"
+                stripe
+                height="460"
+                @row-click="selectTopNode"
+                :default-sort="{ prop: 'critical_score', order: 'descending' }"
+              >
+                <el-table-column label="排名" width="86">
+                  <template #default="scope">
+                    <el-tag v-if="scope.row.rank <= 3" type="danger">No. {{ scope.row.rank }}</el-tag>
+                    <el-tag v-else type="info">{{ scope.row.rank }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="intersection_id" label="路口ID" min-width="110" />
+                <el-table-column prop="intersection_name" label="名称" min-width="120" />
+                <el-table-column label="社区" width="86">
+                  <template #default="scope">社区 {{ (Number(scope.row.community_id) || 0) + 1 }}</template>
+                </el-table-column>
+                <el-table-column prop="functional_zone" label="功能区" min-width="120" />
+                <el-table-column prop="critical_score" label="综合评分(健康度)" width="180" sortable>
+                  <template #header>
+                    综合评分
+                    <el-tooltip content="红错号：严重拥堵 (≥80) | 黄感叹：轻中度拥堵 (60-79) | 绿对号：畅通 (<60)" placement="top">
+                      <span style="cursor:help; margin-left:4px; color:#909399;">ⓘ</span>
+                    </el-tooltip>
+                  </template>
+                  <template #default="scope">
+                    <el-popover placement="right" width="340" trigger="hover">
+                      <template #reference>
+                        <el-progress
+                          :percentage="Math.min(100, Number(scope.row.critical_score) || 0)"
+                          :stroke-width="12"
+                          :status="(scope.row.critical_score >= 80) ? 'exception' : (scope.row.critical_score >= 60 ? 'warning' : 'success')"
+                          style="width:150px"
+                        />
+                      </template>
+                      <div style="font-size:12px;">
+                        <div style="font-weight:600;margin-bottom:6px;">健康度说明</div>
+                        <div style="color:#666;margin-bottom:6px;">
+                          评分越高代表交通压力越大：<br>
+                          🔴 错号 (≥80)：严重瓶颈，需立即干预<br>
+                          🟡 感叹号 (60-79)：存在隐患，需持续关注<br>
+                          🟢 对号 (&lt;60)：运转良好，路况畅通
+                        </div>
+                        <el-divider style="margin: 8px 0;"></el-divider>
+                        <div style="font-weight:600;margin-bottom:6px;">{{ scope.row.intersection_id }} / {{ scope.row.intersection_name }}</div>
+                        <div style="color:#666;margin-bottom:6px;">社区 {{ (Number(scope.row.community_id) || 0) + 1 }} · {{ scope.row.functional_zone }}</div>
+                        <div v-for="item in scoreBreakdown(scope.row)" :key="item.key" style="margin-top:8px;">
+                          <div style="display:flex;justify-content:space-between;">
+                            <span>{{ item.name }}</span>
+                            <span>{{ item.percent }}%</span>
+                          </div>
+                          <el-progress :percentage="item.percent" :stroke-width="10" :show-text="false" />
+                        </div>
+                      </div>
+                    </el-popover>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="slot_total_veh" label="流量" width="90" sortable />
+                <el-table-column prop="slot_delay_s" label="延误" width="90" sortable />
+                <el-table-column prop="slot_queue_m" label="排队" width="90" sortable />
+                <el-table-column label="操作" width="90">
+                  <template #default="scope">
+                    <el-button size="small" type="primary" @click.stop="selectTopNode(scope.row)">定位</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+              <div id="key-metric-chart" class="chart-box mini"></div>
+              <div class="panel-head compact" style="margin-top:12px;">
+                <div>
+                  <p class="panel-kicker">Composition</p>
+                  <h2>评分构成雷达图（TopN汇总）</h2>
+                </div>
+              </div>
+              <div id="key-radar-chart" class="chart-box mini"></div>
+              <div class="panel-head compact" style="margin-top:12px;">
+                <div>
+                  <p class="panel-kicker">Per-Node</p>
+                  <h2>单点评分构成雷达图（选中行）</h2>
+                </div>
+              </div>
+              <div id="key-node-radar" class="chart-box mini"></div>
+              <div class="panel-head compact" style="margin-top:12px;">
+                <div>
+                  <p class="panel-kicker">Group</p>
+                  <h2>社区/功能区分组统计</h2>
+                </div>
+              </div>
+              <div id="key-group-chart" class="chart-box mini"></div>
+            </section>
+
+            <section class="panel" v-show="activePage === 'community'">
+              <div class="panel-head compact">
+                <div>
+                  <p class="panel-kicker">Communities</p>
+                  <h2>社区指标评估</h2>
+                </div>
+              </div>
+              <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
+                <el-input
+                  v-model="communityFilterText"
+                  placeholder="搜索社区ID/功能区"
+                  clearable
+                  style="max-width:220px;"
+                  @input="onCommunityControlChange"
+                />
+                <el-select
+                  v-model="communityCongestionFilter"
+                  clearable
+                  placeholder="拥堵等级"
+                  style="width: 140px"
+                  @change="onCommunityControlChange"
+                >
+                  <el-option value="畅通" label="畅通" />
+                  <el-option value="轻度拥堵" label="轻度拥堵" />
+                  <el-option value="中度拥堵" label="中度拥堵" />
+                  <el-option value="严重拥堵" label="严重拥堵" />
+                </el-select>
+                <el-select v-model="communitySortMetric" style="width: 160px" @change="onCommunityControlChange">
+                  <el-option value="size" label="按路口数" />
+                  <el-option value="totalVeh" label="按总流量" />
+                  <el-option value="avgDelayS" label="按均延误" />
+                  <el-option value="avgSaturation" label="按均饱和" />
+                  <el-option value="crossEdgeCount" label="按跨区连接" />
+                </el-select>
+                <el-select v-model="communitySortOrder" style="width: 120px" @change="onCommunityControlChange">
+                  <el-option value="desc" label="降序" />
+                  <el-option value="asc" label="升序" />
+                </el-select>
+                <el-select v-model="communityZoneFilter" clearable style="width: 180px" placeholder="主导功能区" @change="onCommunityControlChange">
+                  <el-option v-for="z in communityZoneOptions" :key="z" :label="z" :value="z" />
+                </el-select>
+                <el-input-number v-model="communityMinSize" :min="0" :max="40" :step="1" controls-position="right" @change="onCommunityControlChange" />
+                <el-switch v-model="communityMapOnlyFiltered" active-text="地图仅显示筛选社区" @change="onCommunityControlChange" />
+                <el-button type="success" @click="exportCommunityCSV">导出 CSV</el-button>
+                <el-button type="primary" @click="exportCommunityXLSX">导出 Excel</el-button>
+              </div>
+              <el-table :data="communityInsightsDisplayed" stripe height="360" @row-click="focusCommunityRow">
+                <el-table-column label="社区" width="110">
+                  <template #default="scope">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span :style="{ 
+                        background: communityPalette[scope.row.communityId % communityPalette.length], 
+                        width: '12px', 
+                        height: '12px', 
+                        borderRadius: '50%',
+                        display: 'inline-block',
+                        boxShadow: '0 0 4px rgba(0,0,0,0.1)'
+                      }"></span>
+                      社区 {{ scope.row.communityId + 1 }}
+                    </div>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="size" label="路口数" width="80" />
+                <el-table-column prop="totalVeh" label="总流量" width="86" />
+                <el-table-column prop="avgDelayS" label="均延误" width="86" />
+                <el-table-column prop="avgSpeedKmh" label="均速度" width="86" />
+                <el-table-column prop="avgSaturation" label="均饱和" width="130" sortable>
+                  <template #header>
+                    均饱和
+                    <el-tooltip content="红错号：重度饱和 (≥90%) | 黄感叹：中度饱和 (75%-89%) | 绿对号：低饱和 (<75%)" placement="top">
+                      <span style="cursor:help; margin-left:4px; color:#909399;">ⓘ</span>
+                    </el-tooltip>
+                  </template>
+                  <template #default="scope">
+                    <el-progress
+                      :percentage="Math.min(100, Math.round((Number(scope.row.avgSaturation) || 0) * 100))"
+                      :stroke-width="10"
+                      :show-text="false"
+                      :status="(Number(scope.row.avgSaturation) >= 0.9) ? 'exception' : ((Number(scope.row.avgSaturation) >= 0.75) ? 'warning' : 'success')"
+                      style="width:110px"
+                    />
+                  </template>
+                </el-table-column>
+                <el-table-column prop="crossEdgeCount" label="跨区" width="72" sortable />
+                <el-table-column prop="internalEdgeCount" label="内部路段" width="96" sortable />
+                <el-table-column prop="dominantZone" label="主导功能区" min-width="120" show-overflow-tooltip />
+                <el-table-column label="跨区比例" width="100">
+                  <template #default="scope">{{ communityCrossRatio(scope.row) }}%</template>
+                </el-table-column>
+                <el-table-column prop="congestionLevel" label="拥堵" width="110" sortable>
+                  <template #default="scope">
+                    <el-tag v-if="scope.row.congestionLevel === '严重拥堵'" type="danger">严重拥堵</el-tag>
+                    <el-tag v-else-if="scope.row.congestionLevel === '中度拥堵'" type="warning">中度拥堵</el-tag>
+                    <el-tag v-else-if="scope.row.congestionLevel === '轻度拥堵'" type="info">轻度拥堵</el-tag>
+                    <el-tag v-else type="success">畅通</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="90">
+                  <template #default="scope">
+                    <el-button size="small" type="primary" @click.stop="focusCommunityRow(scope.row)">定位</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+              <div class="panel-head compact" style="margin-top:12px;">
+                <div>
+                  <p class="panel-kicker">Compare</p>
+                  <h2>社区均延误对比</h2>
+                </div>
+              </div>
+              <div id="community-delay-chart" class="chart-box mini"></div>
+              <div class="panel-head compact" style="margin-top:12px;">
+                <div>
+                  <p class="panel-kicker">Connectivity</p>
+                  <h2>社区联通性对比</h2>
+                </div>
+              </div>
+              <div id="community-connectivity-chart" class="chart-box mini"></div>
+              <div class="panel-head compact" style="margin-top:12px;">
+                <div>
+                  <p class="panel-kicker">Selected</p>
+                  <h2>选中社区指标雷达图</h2>
+                </div>
+              </div>
+              <div id="community-selected-radar" class="chart-box mini"></div>
+            </section>
+
+            <section class="panel" v-show="activePage === 'detail'">
+              <div class="panel-head compact">
+                <div>
+                  <p class="panel-kicker">Intersection Detail</p>
+                  <h2>{{ selectedNode ? selectedNode.intersection_name : '请选择路口' }}</h2>
+                </div>
+              </div>
+              <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
+                <el-select
+                  v-model="detailIntersectionId"
+                  filterable
+                  clearable
+                  placeholder="选择路口"
+                  style="flex:1;"
+                  @change="onDetailIntersectionChange"
+                >
+                  <el-option v-for="opt in detailNodeOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+                </el-select>
+                <el-button :disabled="detailIndex <= 0" @click="goDetailPrev">上一个</el-button>
+                <el-button :disabled="detailIndex < 0 || detailIndex >= detailOrderedRows.length - 1" @click="goDetailNext">下一个</el-button>
+              </div>
+              <div v-if="!selectedNode">
+                <el-empty description="请在地图点击路口查看详情" />
+              </div>
+              <div v-else>
+                <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+                  <el-tag effect="dark" :type="riskTagType(selectedNode.risk_level)">{{ selectedNode.risk_level }}风险</el-tag>
+                  <el-tag>社区 {{ selectedNode.community_id + 1 }}</el-tag>
+                  <el-tag>{{ selectedNode.functional_zone }}</el-tag>
+                  <el-tag>{{ selectedNode.road_class }}</el-tag>
+                  <el-tag type="info">评分 {{ selectedNode.critical_score }}</el-tag>
+                </div>
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                  <el-button type="success" @click="exportIntersectionCSV">导出时序CSV</el-button>
+                  <el-button type="primary" @click="exportIntersectionXLSX">导出时序Excel</el-button>
+                  <el-button type="warning" @click="exportIntersectionChartPNG">导出趋势图PNG</el-button>
+                </div>
+                <el-descriptions :column="2" border>
+                  <el-descriptions-item label="路口ID">{{ selectedNode.intersection_id }}</el-descriptions-item>
+                  <el-descriptions-item label="经纬度">{{ selectedNode.lng }}, {{ selectedNode.lat }}</el-descriptions-item>
+                  <el-descriptions-item label="当前流量">{{ selectedNode.slot_total_veh }}</el-descriptions-item>
+                  <el-descriptions-item label="当前饱和度">{{ selectedNode.slot_saturation }}</el-descriptions-item>
+                  <el-descriptions-item label="平均延误">{{ selectedNode.slot_delay_s }} s</el-descriptions-item>
+                  <el-descriptions-item label="排队长度">{{ selectedNode.slot_queue_m }} m</el-descriptions-item>
+                  <el-descriptions-item label="连接道路">{{ intersectionDetail.connectedSegments.length }}</el-descriptions-item>
+                  <el-descriptions-item label="相邻路口">{{ adjacentIntersections.length }}</el-descriptions-item>
+                </el-descriptions>
+                <div id="detail-page-chart" class="detail-chart"></div>
+                <div style="display:flex; gap:12px; align-items:center; margin-top:10px; margin-bottom:8px;">
+                  <el-input v-model="detailSegFilterText" placeholder="搜索路段ID/道路名/相邻路口" clearable style="max-width:260px;" />
+                  <el-switch v-model="detailSegCrossOnly" active-text="仅跨社区连接" />
+                  <el-switch v-model="detailSegHighRiskOnly" active-text="仅高风险路段" />
+                  <el-select v-model="detailSegSortMetric" style="width: 150px">
+                    <el-option value="vCRatio" label="按V/C" />
+                    <el-option value="dailyVolume" label="按日流量" />
+                    <el-option value="travelTimeMin" label="按旅行时间" />
+                    <el-option value="avgSpeedKmh" label="按速度" />
+                    <el-option value="lengthM" label="按长度" />
+                  </el-select>
+                  <el-select v-model="detailSegSortOrder" style="width: 120px">
+                    <el-option value="desc" label="降序" />
+                    <el-option value="asc" label="升序" />
+                  </el-select>
+                </div>
+                <el-tabs style="margin-top:10px;">
+                  <el-tab-pane label="相邻路口">
+                    <el-table :data="adjacentIntersections" stripe height="220" @row-click="openNeighbor">
+                      <el-table-column prop="intersection_id" label="相邻路口ID" min-width="120" />
+                      <el-table-column prop="intersection_name" label="名称" min-width="120" />
+                      <el-table-column prop="segmentIds" label="相邻路段ID" min-width="130" show-overflow-tooltip />
+                      <el-table-column label="社区" width="86">
+                        <template #default="scope">社区 {{ (Number(scope.row.community_id) || 0) + 1 }}</template>
+                      </el-table-column>
+                      <el-table-column prop="roadNames" label="连接道路" min-width="130" show-overflow-tooltip />
+                      <el-table-column prop="segmentCount" label="连接数" width="86" />
+                      <el-table-column prop="totalDailyVolume" label="总流量" width="90" />
+                      <el-table-column prop="maxVCRatio" label="最大V/C" width="96" />
+                      <el-table-column prop="minSpeed" label="最小速度" width="96" />
+                      <el-table-column prop="avgTravelTimeMin" label="均旅行(min)" width="110" />
+                      <el-table-column prop="crossCount" label="跨区数" width="86" />
+                      <el-table-column prop="highRiskCount" label="高风险段" width="90" />
+                    </el-table>
+                  </el-tab-pane>
+                  <el-tab-pane label="连接路段">
+                    <el-table :data="detailSegmentsDisplayed" stripe height="220" @row-click="openSegment">
+                      <el-table-column prop="direction" label="方向" width="72">
+                        <template #default="scope">
+                          <el-tag v-if="scope.row.direction === 'out'" type="success">出</el-tag>
+                          <el-tag v-else type="info">入</el-tag>
+                        </template>
+                      </el-table-column>
+                      <el-table-column prop="segmentId" label="路段ID" min-width="100" />
+                      <el-table-column prop="roadName" label="道路" min-width="120" show-overflow-tooltip />
+                      <el-table-column prop="otherEnd" label="相邻路口" min-width="110" />
+                      <el-table-column prop="lengthM" label="长度(m)" width="92" />
+                      <el-table-column prop="lanes" label="车道" width="72" />
+                      <el-table-column prop="dailyVolume" label="日流量" width="92" />
+                      <el-table-column prop="vCRatio" label="V/C" width="110">
+                        <template #header>
+                          V/C
+                          <el-tooltip content="红错号：高风险 (V/C≥0.9) | 黄感叹：中风险 (0.75-0.89) | 绿对号：低风险 (<0.75)" placement="top">
+                            <span style="cursor:help; margin-left:4px; color:#909399;">ⓘ</span>
+                          </el-tooltip>
+                        </template>
+                        <template #default="scope">
+                          <el-progress
+                            :percentage="Math.min(100, Math.round((Number(scope.row.vCRatio) || 0) * 100))"
+                            :stroke-width="10"
+                            :show-text="false"
+                            :status="scope.row.riskLevel === '高' ? 'exception' : (scope.row.riskLevel === '中' ? 'warning' : 'success')"
+                            style="width:90px"
+                          />
+                        </template>
+                      </el-table-column>
+                      <el-table-column prop="avgSpeedKmh" label="速度" width="86" />
+                      <el-table-column prop="travelTimeMin" label="旅行(min)" width="96" />
+                      <el-table-column prop="riskLevel" label="风险" width="72">
+                        <template #default="scope">
+                          <el-tag v-if="scope.row.riskLevel === '高'" type="danger">高</el-tag>
+                          <el-tag v-else-if="scope.row.riskLevel === '中'" type="warning">中</el-tag>
+                          <el-tag v-else type="success">低</el-tag>
+                        </template>
+                      </el-table-column>
+                      <el-table-column prop="isCrossCommunity" label="跨区" width="72">
+                        <template #default="scope">
+                          <el-tag v-if="scope.row.isCrossCommunity" type="danger">是</el-tag>
+                          <el-tag v-else type="info">否</el-tag>
+                        </template>
+                      </el-table-column>
+                      <el-table-column label="跳转" width="80">
+                        <template #default="scope">
+                          <el-button size="small" type="primary" @click.stop="openSegment(scope.row)">查看</el-button>
+                        </template>
+                      </el-table-column>
+                    </el-table>
+                  </el-tab-pane>
+                </el-tabs>
+              </div>
+            </section>
+
+            <section class="panel" v-show="activePage !== 'key' && activePage !== 'community' && activePage !== 'detail'">
+              <div class="panel-head compact">
+                <div>
+                  <p class="panel-kicker">Dataset</p>
+                  <h2>数据说明与预处理</h2>
+                </div>
+              </div>
+              <el-collapse accordion>
+                <el-collapse-item title="数据集说明" name="dataset">
+                  <div class="brief-list">
+                    <p v-for="item in meta.datasetBrief" :key="item.item">
+                      <strong>{{ item.item }}：</strong>{{ item.description }}
+                    </p>
+                  </div>
+                </el-collapse-item>
+                <el-collapse-item title="预处理摘要" name="preprocess">
+                  <div class="brief-list">
+                    <p v-for="(value, key) in meta.preprocessing" :key="key">
+                      <strong>{{ key }}</strong>：{{ value.rows }} 行，缺失填补
+                      {{ value.missingFilled }} 项，异常裁剪 {{ value.negativeValuesClipped }} 项
+                    </p>
+                  </div>
+                </el-collapse-item>
+              </el-collapse>
+            </section>
+          </aside>
+
+          <div class="overview-group" v-show="activePage === 'overview'" style="grid-column: span 2; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;">
+            <section class="panel action-panel" style="grid-column: span 3; display: flex; align-items: center; justify-content: space-between; padding: 20px 30px; background: linear-gradient(90deg, #f8fafc, #f1f5f9); border: 1.5px solid #e2e8f0; border-radius: 16px;">
+              <div>
+                <h3 style="margin:0; font-size: 18px; color: #0f172a;">交通网络智能分析</h3>
+                <p style="margin:6px 0 0; font-size: 14px; color: #64748b;">运行标签传播算法 (LPA) 进行社区检测，并计算路口综合关键度评分</p>
+              </div>
+              <el-button type="primary" :loading="analyzing" icon="VideoPlay" @click="startAnalysis" size="large" style="padding: 12px 30px; font-size: 16px; font-weight: 600;">
+                开始执行系统分析
+              </el-button>
+            </section>
+
+            <section class="panel chart-panel">
+              <div class="panel-head compact">
+                <div>
+                  <p class="panel-kicker">Communities</p>
+                  <h2>社区规模分布</h2>
+                </div>
+              </div>
+              <div id="community-chart" class="chart-box"></div>
+            </section>
+
+            <section class="panel chart-panel">
+              <div class="panel-head compact">
+                <div>
+                  <p class="panel-kicker">Trend</p>
+                  <h2>小时级交通波动</h2>
+                </div>
+              </div>
+              <div id="trend-chart" class="chart-box"></div>
+            </section>
+
+            <section class="panel chart-panel">
+              <div class="panel-head compact">
+                <div>
+                  <p class="panel-kicker">Zones</p>
+                  <h2>功能区负载对比</h2>
+                </div>
+              </div>
+              <div id="zone-chart" class="chart-box"></div>
+            </section>
+          </div>
+        </main>
+
+        <el-drawer v-model="detailVisible" size="40%" :with-header="false">
+          <div v-if="selectedNode" class="drawer-shell">
+            <div class="drawer-head">
+              <div>
+                <p class="panel-kicker">Intersection Detail</p>
+                <h2>{{ selectedNode.intersection_name }}</h2>
+                <p>{{ selectedNode.functional_zone }} / {{ selectedNode.road_class }}</p>
+              </div>
+              <el-tag :type="riskTagType(selectedNode.risk_level)" effect="dark">
+                {{ selectedNode.risk_level }}风险
+              </el-tag>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+              <el-select
+                v-model="detailIntersectionId"
+                filterable
+                clearable
+                placeholder="切换路口"
+                style="flex:1;"
+                @change="onDetailIntersectionChange"
+              >
+                <el-option v-for="opt in detailNodeOptions" :key="opt.id" :label="opt.label" :value="opt.id" />
+              </el-select>
+              <el-button :disabled="detailIndex <= 0" @click="goDetailPrev">上一个</el-button>
+              <el-button :disabled="detailIndex < 0 || detailIndex >= detailOrderedRows.length - 1" @click="goDetailNext">下一个</el-button>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+              <el-button size="small" type="success" @click="exportIntersectionCSV">导出CSV</el-button>
+              <el-button size="small" type="primary" @click="exportIntersectionXLSX">导出Excel</el-button>
+              <el-button size="small" type="warning" @click="exportIntersectionChartPNG">导出PNG</el-button>
+            </div>
+
+            <el-descriptions :column="2" border>
+              <el-descriptions-item label="路口编号">
+                {{ selectedNode.intersection_id }}
+              </el-descriptions-item>
+              <el-descriptions-item label="社区编号">
+                {{ selectedNode.community_id + 1 }}
+              </el-descriptions-item>
+              <el-descriptions-item label="关键评分">
+                {{ selectedNode.critical_score }}
+              </el-descriptions-item>
+              <el-descriptions-item label="当前饱和度">
+                {{ selectedNode.slot_saturation }}
+              </el-descriptions-item>
+              <el-descriptions-item label="平均延误">
+                {{ selectedNode.slot_delay_s }} s
+              </el-descriptions-item>
+              <el-descriptions-item label="排队长度">
+                {{ selectedNode.slot_queue_m }} m
+              </el-descriptions-item>
+            </el-descriptions>
+
+            <div id="detail-chart" class="detail-chart"></div>
+            <div style="display:flex; gap:12px; align-items:center; margin-top:8px; margin-bottom:8px;">
+              <el-switch v-model="detailSegCrossOnly" active-text="仅跨社区连接" />
+              <el-switch v-model="detailSegHighRiskOnly" active-text="仅高风险路段" />
+            </div>
+
+            <el-tabs style="margin-top:10px;">
+              <el-tab-pane label="相邻路口">
+                <el-table :data="adjacentIntersections" stripe height="220" @row-click="openNeighbor">
+                  <el-table-column prop="intersection_id" label="相邻路口ID" min-width="120" />
+                  <el-table-column prop="intersection_name" label="名称" min-width="120" />
+                  <el-table-column prop="segmentIds" label="相邻路段ID" min-width="130" show-overflow-tooltip />
+                  <el-table-column label="社区" width="86">
+                    <template #default="scope">社区 {{ (Number(scope.row.community_id) || 0) + 1 }}</template>
+                  </el-table-column>
+                  <el-table-column prop="roadNames" label="连接道路" min-width="130" show-overflow-tooltip />
+                  <el-table-column prop="segmentCount" label="连接数" width="86" />
+                  <el-table-column prop="totalDailyVolume" label="总流量" width="90" />
+                  <el-table-column prop="maxVCRatio" label="最大V/C" width="96" />
+                  <el-table-column prop="minSpeed" label="最小速度" width="96" />
+                  <el-table-column prop="avgTravelTimeMin" label="均旅行(min)" width="110" />
+                  <el-table-column prop="crossCount" label="跨区数" width="86" />
+                  <el-table-column prop="highRiskCount" label="高风险段" width="90" />
+                </el-table>
+              </el-tab-pane>
+              <el-tab-pane label="连接路段">
+                <el-table :data="detailSegmentsDisplayed" stripe height="220" @row-click="openSegment">
+                  <el-table-column prop="direction" label="方向" width="72">
+                    <template #default="scope">
+                      <el-tag v-if="scope.row.direction === 'out'" type="success">出</el-tag>
+                      <el-tag v-else type="info">入</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="segmentId" label="路段ID" min-width="100" />
+                  <el-table-column prop="roadName" label="道路" min-width="120" show-overflow-tooltip />
+                  <el-table-column prop="otherEnd" label="相邻路口" min-width="100" />
+                  <el-table-column prop="dailyVolume" label="日流量" width="92" />
+                  <el-table-column prop="vCRatio" label="V/C" width="110">
+                    <template #header>
+                      V/C
+                      <el-tooltip content="红错号：高风险 (V/C≥0.9) | 黄感叹：中风险 (0.75-0.89) | 绿对号：低风险 (<0.75)" placement="top">
+                        <span style="cursor:help; margin-left:4px; color:#909399;">ⓘ</span>
+                      </el-tooltip>
+                    </template>
+                    <template #default="scope">
+                      <el-progress
+                        :percentage="Math.min(100, Math.round((Number(scope.row.vCRatio) || 0) * 100))"
+                        :stroke-width="10"
+                        :show-text="false"
+                        :status="scope.row.riskLevel === '高' ? 'exception' : (scope.row.riskLevel === '中' ? 'warning' : 'success')"
+                        style="width:90px"
+                      />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="avgSpeedKmh" label="速度" width="86" />
+                  <el-table-column prop="travelTimeMin" label="旅行(min)" width="96" />
+                  <el-table-column prop="isCrossCommunity" label="跨区" width="72">
+                    <template #default="scope">
+                      <el-tag v-if="scope.row.isCrossCommunity" type="danger">是</el-tag>
+                      <el-tag v-else type="info">否</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="跳转" width="80">
+                    <template #default="scope">
+                      <el-button size="small" type="primary" @click.stop="openSegment(scope.row)">查看</el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </el-tab-pane>
+            </el-tabs>
+          </div>
+        </el-drawer>
+
+      </div>
+    </div>
+
+    <script>
+      window.onerror = function(msg, url, line) {
+        const debug = document.getElementById('debug-info');
+        if (debug) {
+          debug.style.display = 'block';
+          debug.innerHTML += `<div>资源加载异常: ${msg} (at ${line})</div>`;
+        }
+        document.getElementById('retry-btn').style.display = 'block';
+        document.getElementById('lite-btn').style.display = 'block';
+        const text = (msg && msg.message) ? String(msg.message) : String(msg || "");
+        const criticalLibMissing =
+          /Vue is not defined|ElementPlus is not defined|L is not defined|echarts is not defined|XLSX is not defined/i.test(text);
+        if (criticalLibMissing && !window.__liteAutoStarted) {
+          window.__liteAutoStarted = true;
+          setTimeout(() => window.loadLiteMode && window.loadLiteMode(), 50);
+        }
+      };
+      
+      window.loadLiteMode = function() {
+        const wrap = document.getElementById('app-loading');
+        if (!wrap) return;
+        wrap.style.display = 'flex';
+        wrap.innerHTML = `
+          <div style="padding:20px;max-width:980px;margin:0 auto;font-family:sans-serif;width:100%;">
+            <h2 style="margin:0 0 10px;">交通系统 - 离线基础版</h2>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+              <span style="color:#b91c1c;font-size:12px;">检测到 CDN 资源不可用，已切换至离线渲染（不依赖外部库）。</span>
+              <button onclick="location.reload()" style="padding:6px 10px;border-radius:8px;border:1px solid #0f766e;background:white;color:#0f766e;cursor:pointer;">刷新重试</button>
+            </div>
+            <div id="lite-content" style="background:white;border:1px solid #eee;border-radius:14px;padding:14px;box-shadow:0 14px 40px rgba(16,36,59,0.12);">加载中...</div>
+          </div>
+        `;
+
+        const esc = (value) =>
+          String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+        const fmt = (value, digits) => {
+          const num = Number(value);
+          if (!Number.isFinite(num)) return "-";
+          return num.toFixed(digits);
+        };
+        const palette = ["#2563eb", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#06b6d4", "#f97316", "#ec4899"];
+
+        fetch('/api/network')
+          .then((r) => r.json())
+          .then((data) => {
+            const nodes = Array.isArray(data.nodes) ? data.nodes : [];
+            const edges = Array.isArray(data.edges) ? data.edges : [];
+            const byId = new Map(nodes.map((n) => [String(n.id), n]));
+            const pts = nodes
+              .map((n) => ({ id: String(n.id), lat: Number(n.lat), lng: Number(n.lng) }))
+              .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+
+            if (!pts.length) {
+              document.getElementById('lite-content').innerHTML = '无可用坐标数据。';
+              return;
+            }
+
+            const lats = pts.map((p) => p.lat);
+            const lngs = pts.map((p) => p.lng);
+            const minLat = Math.min(...lats);
+            const maxLat = Math.max(...lats);
+            const minLng = Math.min(...lngs);
+            const maxLng = Math.max(...lngs);
+
+            const width = 920;
+            const height = 620;
+            const pad = 26;
+            const dx = Math.max(maxLng - minLng, 1e-9);
+            const dy = Math.max(maxLat - minLat, 1e-9);
+
+            const project = (lat, lng) => {
+              const x = pad + ((lng - minLng) / dx) * (width - pad * 2);
+              const y = pad + ((maxLat - lat) / dy) * (height - pad * 2);
+              return { x, y };
+            };
+
+            nodes.forEach((n) => {
+              const lat = Number(n.lat);
+              const lng = Number(n.lng);
+              if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+              const p = project(lat, lng);
+              n.__x = p.x;
+              n.__y = p.y;
+            });
+
+            const edgeLines = edges
+              .map((e) => {
+                const a = byId.get(String(e.start_node));
+                const b = byId.get(String(e.end_node));
+                if (!a || !b) return '';
+                if (!Number.isFinite(a.__x) || !Number.isFinite(a.__y) || !Number.isFinite(b.__x) || !Number.isFinite(b.__y)) return '';
+                const color = e.is_cross_community ? 'rgba(239,68,68,0.55)' : 'rgba(37,99,235,0.30)';
+                const dash = e.is_cross_community ? '6 6' : '';
+                return `<line x1="${a.__x}" y1="${a.__y}" x2="${b.__x}" y2="${b.__y}" stroke="${color}" stroke-width="2" ${dash ? `stroke-dasharray="${dash}"` : ''} />`;
+              })
+              .join('');
+
+            const nodeDots = nodes
+              .map((n) => {
+                if (!Number.isFinite(n.__x) || !Number.isFinite(n.__y)) return '';
+                const c = Number(n.community_id);
+                const fill = Number.isFinite(c) && c >= 0 ? palette[c % palette.length] : '#94a3b8';
+                const sat = fmt(n.slot_saturation, 3);
+                const score = fmt(n.critical_score, 2);
+                const title = `${esc(n.name || n.id)}\n社区: ${Number.isFinite(c) ? c + 1 : '-'}\n关键评分: ${score}\n饱和度: ${sat}`;
+                return `<g><circle cx="${n.__x}" cy="${n.__y}" r="7" fill="${fill}" stroke="rgba(15,23,42,0.25)" stroke-width="1" /><title>${title}</title></g>`;
+              })
+              .join('');
+
+            const nodeLabels = nodes
+              .map((n) => {
+                if (!Number.isFinite(n.__x) || !Number.isFinite(n.__y)) return '';
+                const label = esc(n.name || n.id);
+                return `<text x="${n.__x + 10}" y="${n.__y - 10}" font-size="12" font-weight="700" fill="#0f172a" stroke="rgba(255,255,255,0.9)" stroke-width="3" paint-order="stroke">${label}</text>`;
+              })
+              .join('');
+
+            const html = `
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+                <div style="font-size:13px;color:#334155;">路口 ${nodes.length} · 路段 ${edges.length}</div>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#334155;user-select:none;">
+                  <input id="lite-label-toggle" type="checkbox" />
+                  显示路口名称
+                </label>
+              </div>
+              <div style="border:1px solid rgba(15,23,42,0.12);border-radius:14px;overflow:hidden;">
+                <svg id="lite-svg" viewBox="0 0 ${width} ${height}" width="100%" height="${height}" style="display:block;background:linear-gradient(180deg,#ffffff,#fbfbfb);">
+                  <g id="lite-layer-edges">${edgeLines}</g>
+                  <g id="lite-layer-nodes">${nodeDots}</g>
+                  <g id="lite-layer-labels" style="display:none;">${nodeLabels}</g>
+                </svg>
+              </div>
+              <div style="margin-top:12px;max-height:240px;overflow:auto;border:1px solid rgba(15,23,42,0.08);border-radius:12px;">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                  <thead>
+                    <tr style="background:#f8fafc;">
+                      <th style="text-align:left;padding:8px;border-bottom:1px solid #e2e8f0;">路口</th>
+                      <th style="text-align:left;padding:8px;border-bottom:1px solid #e2e8f0;">社区</th>
+                      <th style="text-align:left;padding:8px;border-bottom:1px solid #e2e8f0;">关键评分</th>
+                      <th style="text-align:left;padding:8px;border-bottom:1px solid #e2e8f0;">饱和度</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${nodes
+                      .slice()
+                      .sort((a, b) => Number(b.critical_score || 0) - Number(a.critical_score || 0))
+                      .map((n) => {
+                        const c = Number(n.community_id);
+                        return `<tr>
+                          <td style="padding:8px;border-bottom:1px solid #f1f5f9;">${esc(n.name || n.id)}</td>
+                          <td style="padding:8px;border-bottom:1px solid #f1f5f9;">${Number.isFinite(c) ? c + 1 : '-'}</td>
+                          <td style="padding:8px;border-bottom:1px solid #f1f5f9;">${fmt(n.critical_score, 2)}</td>
+                          <td style="padding:8px;border-bottom:1px solid #f1f5f9;">${fmt(n.slot_saturation, 3)}</td>
+                        </tr>`;
+                      })
+                      .join('')}
+                  </tbody>
+                </table>
+              </div>
+            `;
+
+            document.getElementById('lite-content').innerHTML = html;
+
+            const toggle = document.getElementById('lite-label-toggle');
+            const labels = document.getElementById('lite-layer-labels');
+            if (toggle && labels) {
+              toggle.addEventListener('change', () => {
+                labels.style.display = toggle.checked ? 'block' : 'none';
+              });
+            }
+
+            const svg = document.getElementById('lite-svg');
+            if (svg) {
+              let vb = { x: 0, y: 0, w: width, h: height };
+              let dragging = false;
+              let start = null;
+              const setVB = () => svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+              const toSvgPoint = (evt) => {
+                const rect = svg.getBoundingClientRect();
+                const sx = (evt.clientX - rect.left) / rect.width;
+                const sy = (evt.clientY - rect.top) / rect.height;
+                return { x: vb.x + sx * vb.w, y: vb.y + sy * vb.h };
+              };
+              svg.addEventListener('wheel', (evt) => {
+                evt.preventDefault();
+                const p = toSvgPoint(evt);
+                const scale = evt.deltaY > 0 ? 1.12 : 0.89;
+                const nw = Math.max(120, Math.min(width * 8, vb.w * scale));
+                const nh = Math.max(120, Math.min(height * 8, vb.h * scale));
+                const rx = (p.x - vb.x) / vb.w;
+                const ry = (p.y - vb.y) / vb.h;
+                vb.x = p.x - rx * nw;
+                vb.y = p.y - ry * nh;
+                vb.w = nw;
+                vb.h = nh;
+                setVB();
+              }, { passive: false });
+              svg.addEventListener('mousedown', (evt) => {
+                dragging = true;
+                start = { p: toSvgPoint(evt), vb: { ...vb } };
+              });
+              window.addEventListener('mousemove', (evt) => {
+                if (!dragging || !start) return;
+                const p = toSvgPoint(evt);
+                vb.x = start.vb.x + (start.p.x - p.x);
+                vb.y = start.vb.y + (start.p.y - p.y);
+                setVB();
+              });
+              window.addEventListener('mouseup', () => {
+                dragging = false;
+                start = null;
+              });
+              setVB();
+            }
+          })
+          .catch(() => {
+            const el = document.getElementById('lite-content');
+            if (el) el.innerHTML = '离线基础版加载失败：无法获取 /api/network 数据。';
+          });
+      };
+
+      setTimeout(() => {
+        if (!window.__liteAutoStarted && (!window.Vue || !window.L)) {
+          window.__liteAutoStarted = true;
+          window.loadLiteMode && window.loadLiteMode();
+        }
+      }, 1200);
+    </script>
+    <script src="https://cdn.staticfile.org/leaflet/1.9.4/leaflet.js" crossorigin="anonymous"></script>
+    <script src="/static/app.js?v=20260508v6"></script>
+  </body>
+</html>

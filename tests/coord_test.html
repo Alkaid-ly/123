@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>坐标验证测试</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <style>
+        #map { width: 100%; height: 500px; }
+        .info { padding: 20px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>坐标验证测试</h1>
+    <div id="map"></div>
+    <div class="info" id="info">加载中...</div>
+    <script>
+        const map = L.map('map').setView([34.853, 105.676], 14);
+        L.tileLayer('https://wprd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+            attribution: '&copy; 高德地图',
+            subdomains: "1234"
+        }).addTo(map);
+
+        async function loadAndDisplay() {
+            try {
+                const response = await fetch('http://127.0.0.1:8001/api/dashboard?date=2025-10-31&hour=17');
+                const data = await response.json();
+
+                const info = document.getElementById('info');
+                info.innerHTML = `<h3>API 数据验证</h3>
+                    <p>节点数量: ${data.nodes.length}</p>
+                    <p>坐标范围:</p>
+                    <ul>
+                        <li>纬度: ${Math.min(...data.nodes.map(n=>n.lat)).toFixed(6)} ~ ${Math.max(...data.nodes.map(n=>n.lat)).toFixed(6)}</li>
+                        <li>经度: ${Math.min(...data.nodes.map(n=>n.lng)).toFixed(6)} ~ ${Math.max(...data.nodes.map(n=>n.lng)).toFixed(6)}</li>
+                    </ul>
+                    <p>预期秦安县: 纬度 ~34.85, 经度 ~105.67</p>`;
+
+                data.nodes.forEach((node, i) => {
+                    const lat = parseFloat(node.lat);
+                    const lng = parseFloat(node.lng);
+
+                    L.circleMarker([lat, lng], {
+                        radius: 6,
+                        fillColor: '#3388ff',
+                        color: '#ffffff',
+                        weight: 2,
+                        fillOpacity: 0.8
+                    }).bindPopup(`<b>${node.intersection_id}</b><br>${node.intersection_name}<br>lat:${lat}<br>lng:${lng}`)
+                      .addTo(map);
+                });
+
+                console.log('节点坐标:', data.nodes.map(n => ({id: n.intersection_id, lat: n.lat, lng: n.lng})));
+            } catch (e) {
+                document.getElementById('info').innerHTML = '<p style="color:red">错误: ' + e.message + '</p>';
+                console.error(e);
+            }
+        }
+
+        loadAndDisplay();
+    </script>
+</body>
+</html>

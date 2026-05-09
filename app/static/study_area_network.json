@@ -1,0 +1,1345 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.668917,
+            34.851686
+          ],
+          [
+            105.674624,
+            34.860499
+          ]
+        ]
+      },
+      "properties": {
+        "name": "成纪大道",
+        "segment_id": "S001"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674624,
+            34.860499
+          ],
+          [
+            105.671033,
+            34.860521
+          ]
+        ]
+      },
+      "properties": {
+        "name": "成纪大道",
+        "segment_id": "S002"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.671033,
+            34.860521
+          ],
+          [
+            105.667865,
+            34.860475
+          ]
+        ]
+      },
+      "properties": {
+        "name": "成纪大道",
+        "segment_id": "S003"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.667865,
+            34.860475
+          ],
+          [
+            105.671869,
+            34.862083
+          ]
+        ]
+      },
+      "properties": {
+        "name": "成纪大道",
+        "segment_id": "S004"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.671869,
+            34.862083
+          ],
+          [
+            105.674625,
+            34.860581
+          ]
+        ]
+      },
+      "properties": {
+        "name": "成纪大道",
+        "segment_id": "S005"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674625,
+            34.860581
+          ],
+          [
+            105.670412,
+            34.860506
+          ]
+        ]
+      },
+      "properties": {
+        "name": "成纪大道",
+        "segment_id": "S006"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.670412,
+            34.860506
+          ],
+          [
+            105.669962,
+            34.874061
+          ]
+        ]
+      },
+      "properties": {
+        "name": "成纪大道",
+        "segment_id": "S007"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.668917,
+            34.851686
+          ],
+          [
+            105.674657,
+            34.858423
+          ]
+        ]
+      },
+      "properties": {
+        "name": "太白街",
+        "segment_id": "S008"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674657,
+            34.858423
+          ],
+          [
+            105.671072,
+            34.858758
+          ]
+        ]
+      },
+      "properties": {
+        "name": "太白街",
+        "segment_id": "S009"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.671072,
+            34.858758
+          ],
+          [
+            105.6679,
+            34.861828
+          ]
+        ]
+      },
+      "properties": {
+        "name": "太白街",
+        "segment_id": "S010"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.6679,
+            34.861828
+          ],
+          [
+            105.672153,
+            34.863419
+          ]
+        ]
+      },
+      "properties": {
+        "name": "太白街",
+        "segment_id": "S011"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.672153,
+            34.863419
+          ],
+          [
+            105.674375,
+            34.857375
+          ]
+        ]
+      },
+      "properties": {
+        "name": "太白街",
+        "segment_id": "S012"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674375,
+            34.857375
+          ],
+          [
+            105.676229,
+            34.877851
+          ]
+        ]
+      },
+      "properties": {
+        "name": "太白街",
+        "segment_id": "S013"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.676229,
+            34.877851
+          ],
+          [
+            105.669962,
+            34.874061
+          ]
+        ]
+      },
+      "properties": {
+        "name": "太白街",
+        "segment_id": "S014"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.668917,
+            34.851686
+          ],
+          [
+            105.674618,
+            34.855849
+          ]
+        ]
+      },
+      "properties": {
+        "name": "新华街",
+        "segment_id": "S015"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674618,
+            34.855849
+          ],
+          [
+            105.671072,
+            34.858758
+          ]
+        ]
+      },
+      "properties": {
+        "name": "新华街",
+        "segment_id": "S016"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.671072,
+            34.858758
+          ],
+          [
+            105.6679,
+            34.861828
+          ]
+        ]
+      },
+      "properties": {
+        "name": "新华街",
+        "segment_id": "S017"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.6679,
+            34.861828
+          ],
+          [
+            105.672153,
+            34.863419
+          ]
+        ]
+      },
+      "properties": {
+        "name": "新华街",
+        "segment_id": "S018"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.672153,
+            34.863419
+          ],
+          [
+            105.673971,
+            34.8701
+          ]
+        ]
+      },
+      "properties": {
+        "name": "新华街",
+        "segment_id": "S019"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.673971,
+            34.8701
+          ],
+          [
+            105.676229,
+            34.877851
+          ]
+        ]
+      },
+      "properties": {
+        "name": "新华街",
+        "segment_id": "S020"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.676229,
+            34.877851
+          ],
+          [
+            105.669962,
+            34.874061
+          ]
+        ]
+      },
+      "properties": {
+        "name": "新华街",
+        "segment_id": "S021"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.668917,
+            34.851686
+          ],
+          [
+            105.674618,
+            34.855849
+          ]
+        ]
+      },
+      "properties": {
+        "name": "人民街",
+        "segment_id": "S022"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674618,
+            34.855849
+          ],
+          [
+            105.671072,
+            34.858758
+          ]
+        ]
+      },
+      "properties": {
+        "name": "人民街",
+        "segment_id": "S023"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.671072,
+            34.858758
+          ],
+          [
+            105.6679,
+            34.861828
+          ]
+        ]
+      },
+      "properties": {
+        "name": "人民街",
+        "segment_id": "S024"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.6679,
+            34.861828
+          ],
+          [
+            105.674504,
+            34.863471
+          ]
+        ]
+      },
+      "properties": {
+        "name": "人民街",
+        "segment_id": "S025"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674504,
+            34.863471
+          ],
+          [
+            105.674504,
+            34.863471
+          ]
+        ]
+      },
+      "properties": {
+        "name": "人民街",
+        "segment_id": "S026"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674504,
+            34.863471
+          ],
+          [
+            105.672317,
+            34.855835
+          ]
+        ]
+      },
+      "properties": {
+        "name": "人民街",
+        "segment_id": "S027"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.672317,
+            34.855835
+          ],
+          [
+            105.669962,
+            34.874061
+          ]
+        ]
+      },
+      "properties": {
+        "name": "人民街",
+        "segment_id": "S028"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.668917,
+            34.851686
+          ],
+          [
+            105.674618,
+            34.855849
+          ]
+        ]
+      },
+      "properties": {
+        "name": "映南路",
+        "segment_id": "S029"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674618,
+            34.855849
+          ],
+          [
+            105.67169,
+            34.866517
+          ]
+        ]
+      },
+      "properties": {
+        "name": "映南路",
+        "segment_id": "S030"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.67169,
+            34.866517
+          ],
+          [
+            105.67176,
+            34.864268
+          ]
+        ]
+      },
+      "properties": {
+        "name": "映南路",
+        "segment_id": "S031"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.67176,
+            34.864268
+          ],
+          [
+            105.671445,
+            34.863381
+          ]
+        ]
+      },
+      "properties": {
+        "name": "映南路",
+        "segment_id": "S032"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.671445,
+            34.863381
+          ],
+          [
+            105.678275,
+            34.864125
+          ]
+        ]
+      },
+      "properties": {
+        "name": "映南路",
+        "segment_id": "S033"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.678275,
+            34.864125
+          ],
+          [
+            105.676229,
+            34.877851
+          ]
+        ]
+      },
+      "properties": {
+        "name": "映南路",
+        "segment_id": "S034"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.676229,
+            34.877851
+          ],
+          [
+            105.669962,
+            34.874061
+          ]
+        ]
+      },
+      "properties": {
+        "name": "映南路",
+        "segment_id": "S035"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.668917,
+            34.851686
+          ],
+          [
+            105.668917,
+            34.851686
+          ]
+        ]
+      },
+      "properties": {
+        "name": "环城西路",
+        "segment_id": "S036"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.668917,
+            34.851686
+          ],
+          [
+            105.668917,
+            34.851686
+          ]
+        ]
+      },
+      "properties": {
+        "name": "环城西路",
+        "segment_id": "S037"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.668917,
+            34.851686
+          ],
+          [
+            105.668917,
+            34.851686
+          ]
+        ]
+      },
+      "properties": {
+        "name": "环城西路",
+        "segment_id": "S038"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.668917,
+            34.851686
+          ],
+          [
+            105.668917,
+            34.851686
+          ]
+        ]
+      },
+      "properties": {
+        "name": "环城西路",
+        "segment_id": "S039"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674624,
+            34.860499
+          ],
+          [
+            105.674657,
+            34.858423
+          ]
+        ]
+      },
+      "properties": {
+        "name": "解放南路",
+        "segment_id": "S040"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674657,
+            34.858423
+          ],
+          [
+            105.674618,
+            34.855849
+          ]
+        ]
+      },
+      "properties": {
+        "name": "解放南路",
+        "segment_id": "S041"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674618,
+            34.855849
+          ],
+          [
+            105.674618,
+            34.855849
+          ]
+        ]
+      },
+      "properties": {
+        "name": "解放南路",
+        "segment_id": "S042"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674618,
+            34.855849
+          ],
+          [
+            105.674618,
+            34.855849
+          ]
+        ]
+      },
+      "properties": {
+        "name": "解放南路",
+        "segment_id": "S043"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.671033,
+            34.860521
+          ],
+          [
+            105.671072,
+            34.858758
+          ]
+        ]
+      },
+      "properties": {
+        "name": "兴国路",
+        "segment_id": "S044"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.671072,
+            34.858758
+          ],
+          [
+            105.671072,
+            34.858758
+          ]
+        ]
+      },
+      "properties": {
+        "name": "兴国路",
+        "segment_id": "S045"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.671072,
+            34.858758
+          ],
+          [
+            105.671072,
+            34.858758
+          ]
+        ]
+      },
+      "properties": {
+        "name": "兴国路",
+        "segment_id": "S046"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.671072,
+            34.858758
+          ],
+          [
+            105.67169,
+            34.866517
+          ]
+        ]
+      },
+      "properties": {
+        "name": "兴国路",
+        "segment_id": "S047"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.667865,
+            34.860475
+          ],
+          [
+            105.6679,
+            34.861828
+          ]
+        ]
+      },
+      "properties": {
+        "name": "蔡林路",
+        "segment_id": "S048"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.6679,
+            34.861828
+          ],
+          [
+            105.6679,
+            34.861828
+          ]
+        ]
+      },
+      "properties": {
+        "name": "蔡林路",
+        "segment_id": "S049"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.6679,
+            34.861828
+          ],
+          [
+            105.6679,
+            34.861828
+          ]
+        ]
+      },
+      "properties": {
+        "name": "蔡林路",
+        "segment_id": "S050"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.6679,
+            34.861828
+          ],
+          [
+            105.67176,
+            34.864268
+          ]
+        ]
+      },
+      "properties": {
+        "name": "蔡林路",
+        "segment_id": "S051"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.671869,
+            34.862083
+          ],
+          [
+            105.672153,
+            34.863419
+          ]
+        ]
+      },
+      "properties": {
+        "name": "北坛街",
+        "segment_id": "S052"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.672153,
+            34.863419
+          ],
+          [
+            105.672153,
+            34.863419
+          ]
+        ]
+      },
+      "properties": {
+        "name": "北坛街",
+        "segment_id": "S053"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.672153,
+            34.863419
+          ],
+          [
+            105.674504,
+            34.863471
+          ]
+        ]
+      },
+      "properties": {
+        "name": "北坛街",
+        "segment_id": "S054"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674504,
+            34.863471
+          ],
+          [
+            105.671445,
+            34.863381
+          ]
+        ]
+      },
+      "properties": {
+        "name": "北坛街",
+        "segment_id": "S055"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674625,
+            34.860581
+          ],
+          [
+            105.674375,
+            34.857375
+          ]
+        ]
+      },
+      "properties": {
+        "name": "解放北路",
+        "segment_id": "S056"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674375,
+            34.857375
+          ],
+          [
+            105.673971,
+            34.8701
+          ]
+        ]
+      },
+      "properties": {
+        "name": "解放北路",
+        "segment_id": "S057"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.673971,
+            34.8701
+          ],
+          [
+            105.674504,
+            34.863471
+          ]
+        ]
+      },
+      "properties": {
+        "name": "解放北路",
+        "segment_id": "S058"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.674504,
+            34.863471
+          ],
+          [
+            105.678275,
+            34.864125
+          ]
+        ]
+      },
+      "properties": {
+        "name": "解放北路",
+        "segment_id": "S059"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.670412,
+            34.860506
+          ],
+          [
+            105.676229,
+            34.877851
+          ]
+        ]
+      },
+      "properties": {
+        "name": "应乾路",
+        "segment_id": "S060"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.676229,
+            34.877851
+          ],
+          [
+            105.676229,
+            34.877851
+          ]
+        ]
+      },
+      "properties": {
+        "name": "应乾路",
+        "segment_id": "S061"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.676229,
+            34.877851
+          ],
+          [
+            105.672317,
+            34.855835
+          ]
+        ]
+      },
+      "properties": {
+        "name": "应乾路",
+        "segment_id": "S062"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.672317,
+            34.855835
+          ],
+          [
+            105.676229,
+            34.877851
+          ]
+        ]
+      },
+      "properties": {
+        "name": "应乾路",
+        "segment_id": "S063"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.669962,
+            34.874061
+          ],
+          [
+            105.669962,
+            34.874061
+          ]
+        ]
+      },
+      "properties": {
+        "name": "街泉街",
+        "segment_id": "S064"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.669962,
+            34.874061
+          ],
+          [
+            105.669962,
+            34.874061
+          ]
+        ]
+      },
+      "properties": {
+        "name": "街泉街",
+        "segment_id": "S065"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.669962,
+            34.874061
+          ],
+          [
+            105.669962,
+            34.874061
+          ]
+        ]
+      },
+      "properties": {
+        "name": "街泉街",
+        "segment_id": "S066"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            105.669962,
+            34.874061
+          ],
+          [
+            105.669962,
+            34.874061
+          ]
+        ]
+      },
+      "properties": {
+        "name": "街泉街",
+        "segment_id": "S067"
+      }
+    }
+  ]
+}
