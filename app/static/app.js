@@ -872,7 +872,23 @@ const app = Vue.createApp({
           }
         }
 
-        const polyline = L.polyline((this.gcj02ToWgs84 && (edge.path || []).length > 0) ? (edge.path || []).map(p => { const wgs = this.gcj02ToWgs84(p[0], p[1]); return [wgs.lng, wgs.lat]; }) : edge.path, {
+        const rawPath = Array.isArray(edge.path) ? edge.path : [];
+        const path = rawPath
+          .map((p) => {
+            if (!Array.isArray(p) || p.length < 2) return null;
+            const lng = Number(p[0]);
+            const lat = Number(p[1]);
+            if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
+            if (this.gcj02ToWgs84) {
+              const wgs = this.gcj02ToWgs84(lng, lat);
+              return [wgs.lat, wgs.lng];
+            }
+            return [lat, lng];
+          })
+          .filter(Boolean);
+        if (path.length < 2) return;
+
+        const polyline = L.polyline(path, {
           color: this.edgeColor(edge),
           weight: isDimmed ? 1 : this.edgeWeight(edge),
           opacity: opacity,
